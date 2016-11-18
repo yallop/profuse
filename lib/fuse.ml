@@ -78,7 +78,7 @@ end
 module type RO_FULL = sig
   include RO_MID
 
-  val getxattr  : In.Getxattr.T.t structure -> t req_handler
+  val getxattr  : In.Getxattr.T.t structure -> string -> t req_handler
   val listxattr : In.Getxattr.T.t structure -> t req_handler
   val interrupt : In.Interrupt.T.t structure -> t req_handler
   val bmap      : In.Bmap.T.t structure -> t req_handler
@@ -118,7 +118,7 @@ module type RW_FULL = sig
      and type 'a req_handler := 'a req_handler
 
   val fsyncdir    : In.Fsync.T.t structure -> t req_handler
-  val setxattr    : In.Setxattr.T.t structure -> t req_handler
+  val setxattr    : In.Setxattr.T.t structure -> string -> t req_handler
   val removexattr : string -> t req_handler
   val getlk       : In.Lk.T.t structure -> t req_handler (* TODO: RO? *)
   val setlk       : In.Lk.T.t structure -> t req_handler (* TODO: RO? *)
@@ -177,7 +177,7 @@ module Zero(State : STATE)(IO : IO)
   let destroy      = enosys
 
   let statfs       = enosys
-  let getxattr _   = enosys
+  let getxattr _ _ = enosys
   let listxattr _  = enosys
   let interrupt _  = enosys
   let bmap _       = enosys
@@ -196,7 +196,7 @@ module Zero(State : STATE)(IO : IO)
   let create _ _   = enosys
   let fsync _      = enosys
   let fsyncdir _   = enosys
-  let setxattr _   = enosys
+  let setxattr _ _ = enosys
   let removexattr _= enosys
   let getlk _      = enosys
   let setlk _      = enosys
