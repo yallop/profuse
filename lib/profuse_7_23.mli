@@ -985,8 +985,15 @@ module Out : sig
 
     val of_list :
       host:Host.t ->
+      (* offset × inode × name × kind *)
       (int * int64 * string * Dirent.File_kind.t) list ->
-      int -> int -> 'a request -> char Ctypes.CArray.t
+      (* offset *)
+      int ->
+      (* read_size *)
+      int ->
+       (int * int64 * string * Dirent.File_kind.t) list *
+      ('a request -> char Ctypes.CArray.t)
+
   end
 
   module Readlink : sig

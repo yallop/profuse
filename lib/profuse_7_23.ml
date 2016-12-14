@@ -1119,15 +1119,28 @@ module Out = struct
     let struct_size = hdrsz
     let size name = hdrsz + 8 * (((String.length name) + 7) / 8)
 
+    (*
+      listing: (offset × inode × name × kind) list
+      offset: ?
+      read_limit: ?
+    *)
+
     let filter_listing listing offset read_limit =
       let rec loop acc ~read ~emit = function
         | [] ->
-          acc, read
-        | (_,_,name,_) :: l when read + size name > read_limit ->
-          acc, read
+	  (* stop if there are no more entries *) 
+          acc, read, []
+        | (_,_,name,_) :: _ as l when read + size name > read_limit ->
+	  (* stop if the size of this entry (including the name)
+	     would take us over the read limit *) 
+          acc, read, l
         | ((_,_,name,_) as ent)::l when offset = 0 || emit ->
+	   (* if there's no offset, or if emit is enabled
+	      then include the entry and bump the read count *)
           loop (ent :: acc) ~read:(read + size name) ~emit l
         | (off,_,_,_) :: l ->
+	   (* otherwise drop the entry,
+	      and enable emit if we've hit the offset *)
           loop acc ~read ~emit:(off = offset) l
       in loop [] ~read:0 ~emit:false listing      
 
@@ -1143,9 +1156,11 @@ module Out = struct
           ~dst:p ~dst_off:hdrsz ~len:(String.length name)
       end
 
-    let of_list ~host listing offset read_size req =
+    let of_list ~host listing offset read_size =
       let phost = host.Host.dirent.Dirent.Host.file_kind in
-      let listing, count = filter_listing listing offset read_size in
+      let listing, count, rest = filter_listing listing offset read_size in
+      (rest,
+      (fun req ->
       let pkt = Hdr.packet ~count req in
       let buf = CArray.start pkt in
       let ep = List.fold_left (fun p (off,ino,name,typ) ->
@@ -1155,7 +1170,7 @@ module Out = struct
           p +@ sz
       ) buf (List.rev listing) in
       assert (ptr_diff buf ep = count);
-      pkt
+      pkt))      
 
     let to_string ~host dirent =
       let phost = host.Host.dirent.Dirent.Host.file_kind in
